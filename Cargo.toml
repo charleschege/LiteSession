@@ -1,0 +1,17 @@
+[package]
+name = "lite-session"
+version = "0.1.0"
+authors = ["Charles Chege <charleschege@protonmail.ch>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+arrayvec = "0.5.2"
+blake3 = "0.3.7"
+chacha20 = "0.6.0"
+hex = { version = "0.4.2", default-features = false }
+nanorand = { version = "0.5.2", features = ["chacha"] }
+secrecy = { version = "0.7.0", features = ["serde"] }
+tai64 = "3.1.0"
+timelite = "1.0.4"
