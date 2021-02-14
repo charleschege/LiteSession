@@ -26,27 +26,27 @@ fn main() {
             }
         }
     }
-    let mut authguard = AuthGuardData::default();
-    authguard
+    let mut litesession = LiteSessionData::default();
+    litesession
         .username("x43")
         .role(Role::SuperUser)
         .tag("WASI-Container")
         .add_acl(Foo::Bar)
         .add_acl(Foo::Baz);
 
-    dbg!(&authguard);
+    dbg!(&litesession);
 
-    //authguard.remove_acl(Foo::Baz);
-    dbg!(&authguard);
+    //litesession.remove_acl(Foo::Baz);
+    dbg!(&litesession);
 
     let server_key = [0; 32];
 
-    let mut token = AuthGuardToken::default();
+    let mut token = LiteSessionToken::default();
     token
         .expiry(timelite::LiteDuration::hours(12))
-        .hmac_data(authguard)
+        .hmac_data(litesession)
         .confidential(true)
-        .mode(AuthGuardMode::Passive);
+        .mode(LiteSessionMode::Passive);
 
     dbg!(&token);
     dbg!(token.build_secure(&server_key));
@@ -100,17 +100,17 @@ impl ConfidentialityMode {
 }
 
 #[derive(Debug)]
-pub struct AuthGuardToken<T> {
+pub struct LiteSessionToken<T> {
     identifier: String,
     issued: TAI64N,
     expiry: TAI64N,
-    hmac_data: AuthGuardData<T>,
+    hmac_data: LiteSessionData<T>,
     confidentiality: ConfidentialityMode,
     hmac: blake3::Hash,
-    mode: AuthGuardMode,
+    mode: LiteSessionMode,
 }
 
-impl<T> Default for AuthGuardToken<T>
+impl<T> Default for LiteSessionToken<T>
 where
     T: core::fmt::Display + core::fmt::Debug + core::cmp::Ord,
 {
@@ -123,15 +123,15 @@ where
             identifier: SessionTokenRng::alphanumeric(),
             issued: now,
             expiry: now + Duration::from_secs(default_expiry),
-            hmac_data: AuthGuardData::default(),
+            hmac_data: LiteSessionData::default(),
             confidentiality: ConfidentialityMode::default(),
             hmac: hmac_default,
-            mode: AuthGuardMode::Passive,
+            mode: LiteSessionMode::Passive,
         }
     }
 }
 
-impl<T> AuthGuardToken<T>
+impl<T> LiteSessionToken<T>
 where
     T: core::fmt::Display + core::fmt::Debug + core::cmp::Ord,
 {
@@ -147,7 +147,7 @@ where
         self
     }
 
-    pub fn hmac_data(&mut self, data: AuthGuardData<T>) -> &mut Self {
+    pub fn hmac_data(&mut self, data: LiteSessionData<T>) -> &mut Self {
         self.hmac_data = data;
 
         self
@@ -162,7 +162,7 @@ where
         self
     }
 
-    pub fn mode(&mut self, mode: AuthGuardMode) -> &mut Self {
+    pub fn mode(&mut self, mode: LiteSessionMode) -> &mut Self {
         self.mode = mode;
 
         self
@@ -189,17 +189,17 @@ where
 
         let mut token = String::default();
         token.push_str(&self.identifier);
-        token.push(AuthGuardToken::<T>::separator());
+        token.push(LiteSessionToken::<T>::separator());
         token.push_str(&issue_time);
-        token.push(AuthGuardToken::<T>::separator());
+        token.push(LiteSessionToken::<T>::separator());
         token.push_str(&expiry_time);
-        token.push(AuthGuardToken::<T>::separator());
+        token.push(LiteSessionToken::<T>::separator());
         token.push_str(&ciphertext.cipher);
-        token.push(AuthGuardToken::<T>::separator());
+        token.push(LiteSessionToken::<T>::separator());
         token.push_str(&ciphertext.nonce);
-        token.push(AuthGuardToken::<T>::separator());
+        token.push(LiteSessionToken::<T>::separator());
         token.push_str(&ConfidentialityMode::to_string(&self.confidentiality));
-        token.push(AuthGuardToken::<T>::separator());
+        token.push(LiteSessionToken::<T>::separator());
         token.push_str(&hmac_hex);
 
         token
@@ -251,7 +251,7 @@ impl Default for CipherText {
 impl CipherText {
     pub fn encrypt<T: core::fmt::Debug + core::fmt::Display + core::cmp::Ord>(
         &mut self,
-        agdata: &AuthGuardData<T>,
+        ls_data: &LiteSessionData<T>,
         key: &[u8], //TODO use secrecy
     ) -> &Self {
         let nonce_string = SessionTokenRng::nonce();
@@ -260,7 +260,7 @@ impl CipherText {
         let nonce = Nonce::from_slice(&nonce_string.as_bytes());
 
         let mut cipher = ChaCha8::new(&key, &nonce);
-        let mut cipher_text = agdata.build().into_bytes();
+        let mut cipher_text = ls_data.build().into_bytes();
         cipher.apply_keystream(&mut cipher_text);
 
         let cipher_hex = hex::encode(cipher_text);
@@ -312,14 +312,14 @@ impl SessionTokenRng {
 }
 
 #[derive(Debug)]
-pub struct AuthGuardData<T> {
+pub struct LiteSessionData<T> {
     username: String,
     role: Role,
     tag: Option<String>,
     acl: Vec<T>,
 }
 
-impl<T> Default for AuthGuardData<T> {
+impl<T> Default for LiteSessionData<T> {
     fn default() -> Self {
         Self {
             username: String::default(),
@@ -330,7 +330,7 @@ impl<T> Default for AuthGuardData<T> {
     }
 }
 
-impl<T> AuthGuardData<T>
+impl<T> LiteSessionData<T>
 where
     T: core::fmt::Display + core::fmt::Debug + core::cmp::Ord,
 {
@@ -370,14 +370,14 @@ where
 
     pub fn build(&self) -> String {
         let mut acl_token = String::default();
-        let ag_separator = '⥂';
+        let ls_separator = '⥂';
         let acl_separator = '⇅';
         let mut acl_list = String::default();
 
         acl_token.push_str(&self.username);
-        acl_token.push(ag_separator);
+        acl_token.push(ls_separator);
         acl_token.push_str(&Role::to_string(&self.role));
-        acl_token.push(ag_separator);
+        acl_token.push(ls_separator);
 
         match &self.tag {
             None => (),
@@ -390,7 +390,7 @@ where
             acl_list.push(acl_separator);
             acl_list.push_str(&format!("{:?}", item))
         });
-        acl_token.push(ag_separator);
+        acl_token.push(ls_separator);
         acl_token.push_str(&acl_list);
 
         acl_token
@@ -398,14 +398,14 @@ where
 }
 
 #[derive(Debug)]
-pub enum AuthGuardMode {
+pub enum LiteSessionMode {
     /// SessionID of the transport protocol to be used as part of the mac
     SessionID(String),
     /// Ignores the transport protocol SessionID eg. TLS SessionID
     Passive,
 }
 
-impl Default for AuthGuardMode {
+impl Default for LiteSessionMode {
     fn default() -> Self {
         Self::Passive
     }
