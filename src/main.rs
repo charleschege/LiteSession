@@ -276,7 +276,7 @@ impl CipherText {
 pub struct SessionTokenRng;
 
 impl SessionTokenRng {
-    fn alphanumeric() -> String {
+    pub fn alphanumeric() -> String {
         let mut rng = ChaCha::new(8);
         let mut alphabet = [
             "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q",
@@ -293,7 +293,7 @@ impl SessionTokenRng {
         random
     }
 
-    fn nonce() -> String {
+    pub fn nonce() -> String {
         let mut rng = ChaCha::new(8);
         let mut alphabet = [
             "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q",
@@ -429,7 +429,7 @@ impl Default for Role {
 }
 
 impl Role {
-    fn from_str(role: &str) -> Self {
+    pub fn from_str(role: &str) -> Self {
         match role {
             "SlaveNode" => Role::SlaveNode,
             "MasterNode" => Role::MasterNode,
@@ -441,7 +441,7 @@ impl Role {
         }
     }
 
-    fn to_string(role: &Role) -> String {
+    pub fn to_string(role: &Role) -> String {
         match role {
             Role::SlaveNode => "SlaveNode".into(),
             Role::MasterNode => "MasterNode".into(),
