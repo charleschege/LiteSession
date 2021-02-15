@@ -1,7 +1,7 @@
-use crate::{LiteSessionData, SessionTokenRng};
+use crate::{LiteSessionData, LiteSessionError, SessionTokenRng};
 
 use chacha20::{
-    cipher::{NewStreamCipher, SyncStreamCipher, SyncStreamCipherSeek},
+    cipher::{NewStreamCipher, StreamCipher, SyncStreamCipher, SyncStreamCipherSeek},
     ChaCha8, Key, Nonce,
 };
 use core::fmt::Debug;
@@ -24,9 +24,9 @@ impl Default for CipherText {
 }
 
 impl CipherText {
-    pub fn encrypt<T: core::fmt::Debug + core::fmt::Display + core::cmp::Ord>(
+    pub fn encrypt(
         &mut self,
-        ls_data: &LiteSessionData<T>,
+        ls_data: &LiteSessionData,
         key: &[u8], //TODO use secrecy
     ) -> &Self {
         let nonce_string = SessionTokenRng::nonce();
@@ -44,5 +44,33 @@ impl CipherText {
         self.nonce = nonce_string;
 
         self
+    }
+
+    pub fn decrypt(
+        &self,
+        key: &[u8], //TODO use secrecy
+        mut ciphertext: &mut [u8],
+        nonce: &[u8],
+    ) -> Result<LiteSessionData, LiteSessionError> {
+        if key.len() != 32 {
+            return Err(LiteSessionError::ServerKeyLengthError);
+        }
+
+        if nonce.len() != 12 {
+            return Err(LiteSessionError::NonceLengthError);
+        }
+
+        let key = Key::from_slice(key);
+        let nonce = Nonce::from_slice(nonce);
+        let mut cipher = ChaCha8::new(&key, &nonce);
+        cipher.seek(0);
+        cipher.decrypt(&mut ciphertext);
+
+        let raw_data = match String::from_utf8(ciphertext.to_vec()) {
+            Ok(data) => data,
+            Err(_) => return Err(LiteSessionError::FromUtf8Error),
+        };
+
+        LiteSessionData::default().destructure(&raw_data)
     }
 }
