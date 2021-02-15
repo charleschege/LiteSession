@@ -132,8 +132,9 @@ impl ConfidentialityMode {
 
 #[derive(Debug)]
 pub enum TokenOutcome {
-    Authorized,
-    Rejected,
+    TokenAuthorized,
+    TokenRejected,
     BadToken,
-    Authentic,
+    TokenAuthentic,
+    SessionExpired,
 }
