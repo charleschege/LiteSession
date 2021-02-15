@@ -1,11 +1,14 @@
 #[derive(Debug)]
 pub enum LiteSessionError {
-    NonceTooShort,
-    NonceTooLong,
-    ServerKeyTooShort,
-    ServerKeyTooLong,
+    NonceLengthError,
+    ServerKeyLengthError,
     ChaCha8DecryptionError,
     ChaCha8EncryptionError,
     TokenSizeTooLarge,
-    TokenFieldsError,
+    TokenFieldsLengthError,
+    DataFieldsLengthError,
+    InvalidHexString,
+    InvalidTai64NTime,
+    InvalidBytesForBlake3,
+    FromUtf8Error,
 }
