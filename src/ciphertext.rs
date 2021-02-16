@@ -28,7 +28,11 @@ impl CipherText {
         &mut self,
         ls_data: &LiteSessionData,
         key: &[u8], //TODO use secrecy
-    ) -> &Self {
+    ) -> Result<&Self, LiteSessionError> {
+        if key.len() != 32 {
+            return Err(LiteSessionError::ServerKeyLengthError);
+        }
+
         let nonce_string = SessionTokenRng::nonce();
 
         let key = Key::from_slice(key);
@@ -43,7 +47,7 @@ impl CipherText {
         self.cipher = cipher_hex;
         self.nonce = nonce_string;
 
-        self
+        Ok(self)
     }
 
     pub fn decrypt(
@@ -68,9 +72,55 @@ impl CipherText {
 
         let raw_data = match String::from_utf8(ciphertext.to_vec()) {
             Ok(data) => data,
-            Err(_) => return Err(LiteSessionError::FromUtf8Error),
+            Err(_) => return Err(LiteSessionError::FromUtf8TokenError),
         };
 
         LiteSessionData::default().destructure(&raw_data)
+    }
+}
+
+#[cfg(test)]
+mod ciphertext_tests {
+    use super::CipherText;
+    use crate::{LiteSessionData, LiteSessionError, Role};
+
+    #[test]
+    fn cipher() -> Result<(), LiteSessionError> {
+        let mut data = LiteSessionData::default();
+
+        data.username("foo_user");
+        data.role(Role::SuperUser);
+        data.tag("Foo-Tag");
+        data.add_acl("Network-TCP");
+        data.add_acl("Network-UDP");
+
+        let bad_key = [0_u8; 32];
+        let bad_key2 = [1_u8; 32];
+
+        let mut ciphertext = CipherText::default();
+        ciphertext.encrypt(&data, &bad_key);
+
+        let decrypt_ops = CipherText::default();
+        let mut ciphertext_bytes = match hex::decode(ciphertext.cipher) {
+            Ok(bytes) => bytes,
+            Err(_) => return Err(LiteSessionError::InvalidHexString),
+        };
+
+        let decryption = decrypt_ops.decrypt(
+            &bad_key,
+            &mut ciphertext_bytes,
+            &ciphertext.nonce.as_bytes(),
+        )?;
+        let bad_decryption = decrypt_ops.decrypt(
+            &bad_key2,
+            &mut ciphertext_bytes,
+            &ciphertext.nonce.as_bytes(),
+        );
+
+        assert_eq!(data, decryption);
+
+        assert_eq!(bad_decryption, Err(LiteSessionError::FromUtf8TokenError));
+
+        Ok(())
     }
 }

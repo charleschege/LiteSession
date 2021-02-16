@@ -19,6 +19,32 @@ impl Default for LiteSessionData {
     }
 }
 
+impl core::cmp::PartialEq for LiteSessionData {
+    fn eq(&self, other: &Self) -> bool {
+        if self.username == other.username
+            && self.role == other.role
+            && self.tag == other.tag
+            && self.acl == other.acl
+        {
+            true
+        } else {
+            false
+        }
+    }
+}
+
+impl core::clone::Clone for LiteSessionData {
+    //FIXME use cfg to enable only for tests
+    fn clone(&self) -> Self {
+        Self {
+            username: self.username.clone(),
+            role: self.role.clone(),
+            tag: self.tag.clone(),
+            acl: self.acl.clone(),
+        }
+    }
+}
+
 impl LiteSessionData {
     pub fn username(&mut self, value: &str) -> &mut Self {
         self.username = value.into();
@@ -38,18 +64,16 @@ impl LiteSessionData {
         self
     }
 
-    pub fn add_acl(&mut self, resourse: &str) -> &mut Self {
-        self.acl.push(resourse.into());
+    pub fn add_acl(&mut self, resource: &str) -> &mut Self {
+        self.acl.push(resource.into());
+        self.acl.sort();
 
         self
     }
 
-    pub fn remove_acl(&mut self, resource: &str) -> Option<&mut Self> {
-        match self.acl.binary_search(&resource.into()) {
-            Ok(index) => {
-                self.acl.remove(index);
-                Some(self)
-            }
+    pub fn remove_acl(&mut self, resource: &str) -> Option<String> {
+        match self.acl.binary_search(&resource.to_owned()) {
+            Ok(index) => Some(self.acl.remove(index)),
             Err(_) => None,
         }
     }
@@ -69,10 +93,10 @@ impl LiteSessionData {
         }
 
         let initial = &self.acl[0];
-        acl_list.push_str(&format!("{:?}", initial));
+        acl_list.push_str(&initial);
         self.acl.iter().skip(1).for_each(|item| {
             acl_list.push(self.acl_separator());
-            acl_list.push_str(&format!("{:?}", item))
+            acl_list.push_str(&item)
         });
         acl_token.push(self.ls_separator());
         acl_token.push_str(&acl_list);
@@ -108,5 +132,59 @@ impl LiteSessionData {
 
     fn acl_separator(&self) -> char {
         '⇅'
+    }
+}
+
+#[cfg(test)]
+mod data_tests {
+    use super::{LiteSessionData, Role};
+
+    #[test]
+    fn data_tests() -> Result<(), crate::LiteSessionError> {
+        let mut data = LiteSessionData::default();
+
+        data.username("foo_user");
+        assert_eq!(data.username, "foo_user");
+
+        data.role(Role::SuperUser);
+        assert_eq!(data.role, Role::SuperUser);
+
+        data.tag("Foo-Tag");
+        assert_eq!(data.tag, Some("Foo-Tag".into()));
+
+        data.add_acl("Network-TCP");
+        assert_eq!(data.acl, vec!["Network-TCP"]);
+
+        data.add_acl("Network-UDP");
+        let mut data_compare1 = vec!["Network-TCP", "Network-UDP"];
+        data_compare1.sort();
+        assert_eq!(data.acl, data_compare1);
+
+        data.add_acl("Network-FTP");
+        let mut data_compare2 = vec!["Network-TCP", "Network-UDP", "Network-FTP"];
+        data_compare2.sort();
+        assert_eq!(data.acl, data_compare2);
+
+        assert_eq!(
+            data.remove_acl("Network-FTP"),
+            Some("Network-FTP".to_owned())
+        );
+        //assert_eq!(data.acl, vec!["Network-TCP", "Network-UDP"]);
+
+        let prepared_data = data.build();
+        assert_eq!(
+            prepared_data,
+            "foo_user⥂SuperUser⥂Foo-Tag⥂Network-TCP⇅Network-UDP".to_owned()
+        );
+
+        let destructured = LiteSessionData::default();
+        let token_data = destructured.destructure(&prepared_data)?;
+
+        assert_eq!(token_data.username, data.username);
+        assert_eq!(token_data.role, data.role);
+        assert_eq!(token_data.tag, data.tag);
+        assert_eq!(token_data.acl, data.acl);
+
+        Ok(())
     }
 }
