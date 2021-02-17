@@ -98,7 +98,7 @@ mod ciphertext_tests {
         let bad_key2 = [1_u8; 32];
 
         let mut ciphertext = CipherText::default();
-        ciphertext.encrypt(&data, &bad_key);
+        ciphertext.encrypt(&data, &bad_key)?;
 
         let decrypt_ops = CipherText::default();
         let mut ciphertext_bytes = match hex::decode(ciphertext.cipher) {
