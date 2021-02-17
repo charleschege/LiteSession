@@ -101,7 +101,25 @@ impl LiteSessionToken {
         self
     }
 
-    pub fn build_secure(&self, server_key: &[u8]) -> Result<String, LiteSessionError> {
+    fn compute_hmac(&self, server_key: &[u8; 32], ciphertext: &str, nonce: &str) -> blake3::Hash {
+        //Blake3HMAC(identifier|issued|expiry|ciphertext|nonce|ConfidentialityMode, k)
+
+        let issue_time = hex::encode(self.issued.to_bytes());
+        let expiry_time = hex::encode(self.expiry.to_bytes());
+
+        let mut prepare_hmac = String::default();
+        prepare_hmac.push_str(&self.identifier);
+        prepare_hmac.push_str(&issue_time);
+        prepare_hmac.push_str(&expiry_time);
+        prepare_hmac.push_str(&ciphertext);
+        prepare_hmac.push_str(&nonce);
+        prepare_hmac.push_str(&ConfidentialityMode::to_string(&self.confidentiality));
+        let hmac = blake3::keyed_hash(&server_key, &prepare_hmac.as_bytes());
+
+        hmac
+    }
+
+    pub fn build_secure(&mut self, server_key: &[u8]) -> Result<String, LiteSessionError> {
         match server_key.len() {
             32_usize => (),
             _ => return Err(LiteSessionError::ServerKeyLengthError),
@@ -117,15 +135,8 @@ impl LiteSessionToken {
         let mut cipher_data = CipherText::default();
         let ciphertext = cipher_data.encrypt(&self.hmac_data, &self.get_key(&server_key))?;
 
-        //Blake3HMAC(identifier|issued|expiry|ciphertext|nonce|ConfidentialityMode, k)
-        let mut prepare_hmac = String::default();
-        prepare_hmac.push_str(&self.identifier);
-        prepare_hmac.push_str(&issue_time);
-        prepare_hmac.push_str(&expiry_time);
-        prepare_hmac.push_str(&ciphertext.cipher);
-        prepare_hmac.push_str(&ciphertext.nonce);
-        prepare_hmac.push_str(&ConfidentialityMode::to_string(&self.confidentiality));
-        let hmac = blake3::keyed_hash(&server_key, &prepare_hmac.as_bytes());
+        let hmac = self.compute_hmac(&server_key, &ciphertext.cipher, &ciphertext.nonce);
+        self.hmac = hmac;
         let hmac_hex = hex::encode(&hmac.as_bytes());
 
         let mut token = String::default();
@@ -180,37 +191,30 @@ impl LiteSessionToken {
             Err(_) => return Err(LiteSessionError::To32ByteKeyError),
         };
 
-        //Blake3HMAC(identifier|issued|expiry|ciphertext|nonce|ConfidentialityMode, k)
-        let mut prepare_hmac = String::default();
-        prepare_hmac.push_str(&identifier);
-        prepare_hmac.push_str(&issued_hex);
-        prepare_hmac.push_str(&expiry_hex);
-        prepare_hmac.push_str(&ciphertext_hex);
-        prepare_hmac.push_str(&nonce);
-        prepare_hmac.push_str(&confidentiality);
-        let hmac = blake3::keyed_hash(&server_key, &prepare_hmac.as_bytes());
-
-        if hmac != self.to_hmac(hmac_hex)? {
-            return Ok((TokenOutcome::TokenRejected, self));
-        } else {
-        }
-
         self.identifier = identifier.into();
         self.issued = issued;
         self.expiry = expiry;
         self.confidentiality = ConfidentialityMode::from_string(confidentiality);
-        self.hmac = self.to_hmac(hmac_hex)?;
 
         let mut ciphertext_bytes = match hex::decode(ciphertext_hex) {
             Ok(bytes) => bytes,
             Err(_) => return Err(LiteSessionError::InvalidHexString),
         };
 
+        let encryption_key = self.get_key(&server_key);
         self.hmac_data = CipherText::default().decrypt(
-            &self.get_key(&server_key),
+            &encryption_key,
             &mut ciphertext_bytes,
             nonce.as_bytes(),
         )?;
+
+        let hmac = self.compute_hmac(&server_key, ciphertext_hex, nonce);
+
+        if hmac != self.to_hmac(&hmac_hex)? {
+            return Ok((TokenOutcome::TokenRejected, self));
+        } else {
+            self.hmac = hmac;
+        }
 
         Ok((TokenOutcome::TokenAuthentic, self))
     }
@@ -305,22 +309,33 @@ mod token_tests {
         token.mode(LiteSessionMode::Passive);
         assert_eq!(token.mode, LiteSessionMode::Passive);
 
-        let server_key1 = [0_u8; 32];
-        let server_key2 = [1_u8; 32];
-        let bad_key = [0_u8; 5];
-        assert_eq!(
-            token.build_secure(&bad_key),
-            Err(LiteSessionError::ServerKeyLengthError)
-        );
-        let mut token_cloned = token.clone();
-        let final_token = token.build_secure(&server_key1)?;
-        let checked_token = token.from_string(&server_key1, &final_token);
+        {
+            let bad_key = [0_u8; 5];
+            assert_eq!(
+                token.build_secure(&bad_key),
+                Err(LiteSessionError::ServerKeyLengthError)
+            );
+        }
 
-        let bad_checked_token = token.from_string(&server_key2, &final_token);
-        assert_eq!(
-            bad_checked_token,
-            Ok((TokenOutcome::TokenRejected, token_cloned.immutable()))
-        );
+        {
+            let server_key = [0_u8; 32];
+            let session_token = token.build_secure(&server_key)?;
+
+            let mut destructured = LiteSessionToken::default();
+            let outcome = destructured.from_string(&server_key, &session_token)?;
+
+            assert_eq!(outcome, (TokenOutcome::TokenAuthentic, token.immutable()));
+        }
+
+        {
+            let server_key = [0_u8; 32];
+            let session_token = token.build_secure(&server_key)?;
+
+            let mut destructured = LiteSessionToken::default();
+            let outcome = destructured.from_string(&[1_u8; 32], &session_token);
+
+            assert_eq!(outcome, Err(LiteSessionError::FromUtf8TokenError));
+        }
 
         Ok(())
     }
