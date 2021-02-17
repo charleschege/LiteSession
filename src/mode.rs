@@ -1,3 +1,10 @@
+///This describes which mode to use for the authentication/authorization.
+/// Use `LiteSessionMode::Passive` to bypass session ID pinning of the user session
+/// to the token. This is vulnerable to `Denning-Sacco Attack`
+///
+/// Use `LiteSessionMode::SessionID(id)` to pin the current user session ID
+/// to the token. This prevents `Denning-Sacco Attack`. An example of a sessionID
+///is the Transport Layer Security(TLS) `session key`
 #[derive(Debug)]
 pub enum LiteSessionMode {
     /// SessionID of the transport protocol to be used as part of the mac
