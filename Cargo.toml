@@ -3,6 +3,16 @@ name = "lite-session"
 version = "1.0.0"
 authors = ["Charles Chege <charleschege@protonmail.ch>"]
 edition = "2018"
+description = "Create Session Tokens that are Resilient to Misuse and Highjacking"
+homepage = "https://github.com/charleschege/LiteSession"
+repository = "https://github.com/charleschege/LiteSession"
+license = "Apache-2.0"
+keywords = ["encryption", "sessions", "autonomous-secrets", "privacy", "embedded-security"]
+categories = ["cryptography", "authentication", "embedded", "no-std"]
+readme = "README.md"
+
+[badges]
+maintenance = { status = "actively-developed" }
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
