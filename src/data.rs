@@ -1,5 +1,15 @@
 use crate::{LiteSessionError, Role};
 
+/// The data part of the token which contains additional client identifying data
+///
+/// ```
+/// pub struct LiteSessionData {
+///     username: String,
+///     role: Role,
+///     tag: Option<String>,
+///     acl: Vec<String>,
+/// }
+/// ```
 #[derive(Debug)]
 pub struct LiteSessionData {
     username: String,
@@ -46,38 +56,39 @@ impl core::clone::Clone for LiteSessionData {
 }
 
 impl LiteSessionData {
+    /// Add a custom username
     pub fn username(&mut self, value: &str) -> &mut Self {
         self.username = value.into();
 
         self
     }
-
+    /// A a desired `Role` from the list of provided by the `Role` module
     pub fn role(&mut self, role: Role) -> &mut Self {
         self.role = role;
 
         self
     }
-
+    /// Add a custom tag to identify this token or current client/server/node
     pub fn tag(&mut self, tag: &str) -> &mut Self {
         self.tag = Some(tag.into());
 
         self
     }
-
-    pub fn add_acl(&mut self, resource: &str) -> &mut Self {
-        self.acl.push(resource.into());
+    /// Add a capability to the access control list
+    pub fn add_acl(&mut self, capability: &str) -> &mut Self {
+        self.acl.push(capability.into());
         self.acl.sort();
 
         self
     }
-
-    pub fn remove_acl(&mut self, resource: &str) -> Option<String> {
-        match self.acl.binary_search(&resource.to_owned()) {
+    /// Remove a capability from the access control list
+    pub fn remove_acl(&mut self, capability: &str) -> Option<String> {
+        match self.acl.binary_search(&capability.to_owned()) {
             Ok(index) => Some(self.acl.remove(index)),
             Err(_) => None,
         }
     }
-
+    /// Build the data to a string that can be attached to a token
     pub fn build(&self) -> String {
         let mut acl_token = String::default();
         let mut acl_list = String::default();
@@ -103,7 +114,10 @@ impl LiteSessionData {
 
         acl_token
     }
+    //TODO Add a way to build a hex token instead of a string token and
+    //TODO check if tis more efficient than a string token
 
+    /// Destructure the current cipher text into its components and check if they are valid
     pub fn destructure(mut self, data: &str) -> Result<Self, LiteSessionError> {
         let first_split: Vec<&str> = data.split(self.ls_separator()).collect();
         if first_split.len() != 4_usize {

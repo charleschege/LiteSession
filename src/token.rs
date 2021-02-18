@@ -8,6 +8,19 @@ use std::convert::TryInto;
 use tai64::TAI64N;
 use timelite::LiteDuration;
 
+/// The token strucuture that performs token operations
+///
+/// ```
+/// pub struct LiteSessionToken {
+///     identifier: String,
+///     issued: TAI64N,
+///     expiry: TAI64N,
+///     hmac_data: LiteSessionData,
+///     confidentiality: ConfidentialityMode,
+///     hmac: blake3::Hash,
+///     mode: LiteSessionMode,
+/// }
+/// ````
 #[derive(Debug)]
 pub struct LiteSessionToken {
     identifier: String,
@@ -68,24 +81,28 @@ impl core::clone::Clone for LiteSessionToken {
 }
 
 impl LiteSessionToken {
+    /// Add an custom identifier for the token
     pub fn identifier(&mut self, identifier: &str) -> &mut Self {
         self.identifier = identifier.into();
 
         self
     }
-
+    /// Add a custom expiry time for the token. Default exipry is 24 hours
     pub fn expiry(&mut self, expiry_in_secs: u64) -> &mut Self {
         self.expiry = self.issued + Duration::from_secs(expiry_in_secs);
 
         self
     }
-
+    /// The data contained here describes the token and its capabilities
+    /// as provided by `LiteSessionData` struct
     pub fn hmac_data(&mut self, data: LiteSessionData) -> &mut Self {
         self.hmac_data = data;
 
         self
     }
-
+    /// Choose the security mode. Choosing `true` makes the token authenticate
+    /// in high confidentiality mode by setting the field to `ConfidentialityMode::High`
+    /// setting it to false sets the security mode to `ConfidentialityMode::Low`
     pub fn confidential(&mut self, bool_choice: bool) -> &mut Self {
         match bool_choice {
             true => self.confidentiality = ConfidentialityMode::High,
@@ -94,7 +111,7 @@ impl LiteSessionToken {
 
         self
     }
-
+    /// Set the session mode to either use a `SessionID` or not
     pub fn mode(&mut self, mode: LiteSessionMode) -> &mut Self {
         self.mode = mode;
 
@@ -118,7 +135,10 @@ impl LiteSessionToken {
 
         hmac
     }
+    //TODO Add a way to build a hex token instead of a string token and
+    //TODO check if tis more efficient than a string token
 
+    /// Build the token with `High Confidentiality`
     pub fn build_secure(&mut self, server_key: &[u8]) -> Result<String, LiteSessionError> {
         match server_key.len() {
             32_usize => (),
@@ -128,10 +148,7 @@ impl LiteSessionToken {
         let issue_time = hex::encode(self.issued.to_bytes());
         let expiry_time = hex::encode(self.expiry.to_bytes());
 
-        let server_key: [u8; 32] = match server_key.try_into() {
-            Ok(key) => key,
-            Err(_) => return Err(LiteSessionError::To32ByteKeyError),
-        };
+        let server_key: [u8; 32] = self.transform_key(server_key)?;
         let mut cipher_data = CipherText::default();
         let ciphertext = cipher_data.encrypt(&self.hmac_data, &self.get_key(&server_key))?;
 
@@ -156,6 +173,7 @@ impl LiteSessionToken {
 
         Ok(token)
     }
+    /// Destructure and autheticate a token
     pub fn from_string(
         &mut self,
         server_key: &[u8],
@@ -186,10 +204,7 @@ impl LiteSessionToken {
             return Ok((TokenOutcome::SessionExpired, self));
         }
 
-        let server_key: [u8; 32] = match server_key.try_into() {
-            Ok(key) => key,
-            Err(_) => return Err(LiteSessionError::To32ByteKeyError),
-        };
+        let server_key: [u8; 32] = self.transform_key(server_key)?;
 
         self.identifier = identifier.into();
         self.issued = issued;
@@ -218,12 +233,19 @@ impl LiteSessionToken {
 
         Ok((TokenOutcome::TokenAuthentic, self))
     }
-
+    /// Make a mutable `LiteSessionToken` immutable
     pub fn immutable(&mut self) -> &Self {
         self
     }
 
-    fn get_key<'a>(&self, key: &[u8; 32]) -> [u8; 32] {
+    fn transform_key(&self, server_key: &[u8]) -> Result<[u8; 32], LiteSessionError> {
+        match server_key.try_into() {
+            Ok(key) => Ok(key),
+            Err(_) => return Err(LiteSessionError::ServerKeyLengthError),
+        }
+    }
+
+    fn get_key(&self, key: &[u8; 32]) -> [u8; 32] {
         let mut raw_key = String::default();
 
         let identifier = self.identifier.clone();

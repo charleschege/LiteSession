@@ -1,11 +1,11 @@
 use crate::{LiteSessionData, LiteSessionError, SessionTokenRng};
-
 use chacha20::{
     cipher::{NewStreamCipher, StreamCipher, SyncStreamCipher, SyncStreamCipherSeek},
     ChaCha8, Key, Nonce,
 };
 use core::fmt::Debug;
 
+/// Holds the generated `ChaCha8` cipher text and r`andom generated nonce`
 #[derive(Debug)]
 pub struct CipherText {
     pub(crate) cipher: CipherHex, //FIXME remove allocations with `ArrayVec`
@@ -24,6 +24,7 @@ impl Default for CipherText {
 }
 
 impl CipherText {
+    /// Encrypts the `user data` of the token to prevent eavesdropping of its contents
     pub fn encrypt(
         &mut self,
         ls_data: &LiteSessionData,
@@ -50,6 +51,7 @@ impl CipherText {
         Ok(self)
     }
 
+    /// Decrypts the user data
     pub fn decrypt(
         &self,
         key: &[u8], //TODO use secrecy
