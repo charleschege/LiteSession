@@ -1,2 +1,2 @@
 # LiteSession
-Create sessions token for the web that are resilient to misuse and highjacking
+Create Session Tokens that are Resilient to Misuse and Highjacking
