@@ -17,7 +17,7 @@ pub struct LiteSessionData {
     username: String,
     role: Role,
     tag: Option<String>,
-    acl: Vec<String>, //FIXME Make `acl` an enum of well known ACL fields
+    acl: Vec<String>,
 }
 
 impl Default for LiteSessionData {
@@ -46,7 +46,6 @@ impl core::cmp::PartialEq for LiteSessionData {
 }
 
 impl core::clone::Clone for LiteSessionData {
-    //FIXME use cfg to enable only for tests
     fn clone(&self) -> Self {
         Self {
             username: self.username.clone(),
@@ -132,8 +131,6 @@ impl LiteSessionData {
 
         acl_token
     }
-    //TODO Add a way to build a hex token instead of a string token and
-    //TODO check if tis more efficient than a string token
 
     /// Destructure the current cipher text into its components and check if they are valid
     pub fn destructure(mut self, data: &str) -> Result<Self, LiteSessionError> {

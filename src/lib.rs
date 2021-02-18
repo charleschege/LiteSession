@@ -1,5 +1,4 @@
 #![forbid(unsafe_code)]
-//TODO #![deny(missing_doc_code_examples)]
 #![deny(missing_docs)]
 
 //! LiteSession is a token generator for secure tokens that can be used in

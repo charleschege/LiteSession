@@ -8,8 +8,8 @@ use core::fmt::Debug;
 /// Holds the generated `ChaCha8` cipher text and r`andom generated nonce`
 #[derive(Debug)]
 pub struct CipherText {
-    pub(crate) cipher: CipherHex, //FIXME remove allocations with `ArrayVec`
-    pub(crate) nonce: String,     //FIXME to secrecy
+    pub(crate) cipher: CipherHex,
+    pub(crate) nonce: String,
 }
 
 type CipherHex = String;
@@ -28,7 +28,7 @@ impl CipherText {
     pub fn encrypt(
         &mut self,
         ls_data: &LiteSessionData,
-        key: &[u8], //TODO use secrecy
+        key: &[u8],
     ) -> Result<&Self, LiteSessionError> {
         if key.len() != 32 {
             return Err(LiteSessionError::ServerKeyLengthError);
@@ -54,7 +54,7 @@ impl CipherText {
     /// Decrypts the user data
     pub fn decrypt(
         &self,
-        key: &[u8], //TODO use secrecy
+        key: &[u8],
         mut ciphertext: &mut [u8],
         nonce: &[u8],
     ) -> Result<LiteSessionData, LiteSessionError> {

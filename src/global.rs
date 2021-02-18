@@ -70,7 +70,7 @@ pub enum Role {
     /// A normal client
     User,
     /// A client with a custom role
-    Custom(String), //FIXME make this generic
+    Custom(String),
 }
 
 impl Default for Role {
@@ -102,7 +102,6 @@ impl core::cmp::PartialEq for Role {
 }
 
 impl core::clone::Clone for Role {
-    //FIXME use cfg to allow only in tests
     fn clone(&self) -> Self {
         match self {
             Self::SlaveNode => Self::SlaveNode,
@@ -161,7 +160,7 @@ impl Role {
 /// The securoty mode of the data field in the token
 pub enum ConfidentialityMode {
     /// Data field is unencrypted
-    Low, //TODO add method to build this
+    Low,
     /// Data field is encrypted
     High,
 }
@@ -232,7 +231,7 @@ pub enum TokenOutcome {
     /// The token has been proved to be authentic
     TokenAuthentic,
     /// The token has been authorized for provided capabilities
-    TokenAuthorized, //TODO create methods to handle this
+    TokenAuthorized,
     /// The token is not authentic and has been rejected
     TokenRejected,
     /// The token has been revoked by the server

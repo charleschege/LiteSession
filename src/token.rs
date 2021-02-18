@@ -139,8 +139,6 @@ impl LiteSessionToken {
 
         hmac
     }
-    //TODO Add a way to build a hex token instead of a string token and
-    //TODO check if tis more efficient than a string token
 
     /// Build the token with `High Confidentiality`
     pub fn build_secure(&mut self, server_key: &[u8]) -> Result<String, LiteSessionError> {
@@ -183,7 +181,6 @@ impl LiteSessionToken {
         server_key: &[u8],
         token: &str,
     ) -> Result<(TokenOutcome, &Self), LiteSessionError> {
-        //TODO document errors for token sizes
         if token.len() > 1024 * 1024 {
             return Err(LiteSessionError::TokenSizeTooLarge);
         }
