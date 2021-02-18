@@ -88,16 +88,19 @@ impl LiteSessionData {
             Err(_) => None,
         }
     }
+    /// Get the username
     pub fn get_username(&self) -> &String {
         &self.username
     }
+    /// Get the role
     pub fn get_role(&self) -> &Role {
         &self.role
     }
-
+    /// Get the tag
     pub fn get_tag(&self) -> &Option<String> {
         &self.tag
     }
+    /// Get the access control list of capabilities
     pub fn get_acl(&self) -> &Vec<String> {
         &self.acl
     }
