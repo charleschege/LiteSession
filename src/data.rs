@@ -88,6 +88,19 @@ impl LiteSessionData {
             Err(_) => None,
         }
     }
+    pub fn get_username(&self) -> &String {
+        &self.username
+    }
+    pub fn get_role(&self) -> &Role {
+        &self.role
+    }
+
+    pub fn get_tag(&self) -> &Option<String> {
+        &self.tag
+    }
+    pub fn get_acl(&self) -> &Vec<String> {
+        &self.acl
+    }
     /// Build the data to a string that can be attached to a token
     pub fn build(&self) -> String {
         let mut acl_token = String::default();
