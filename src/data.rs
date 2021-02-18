@@ -3,6 +3,8 @@ use crate::{LiteSessionError, Role};
 /// The data part of the token which contains additional client identifying data
 ///
 /// ```
+/// use lite_session::Role;
+///
 /// pub struct LiteSessionData {
 ///     username: String,
 ///     role: Role,

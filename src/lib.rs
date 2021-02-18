@@ -42,6 +42,7 @@
 //!     - Append `ConfidentialityMode` to `token`
 //!     - Append `Blake3Hmac` to `token`
 //!     - Return the token as a string or hex
+//! The token generated is in the format `identifier⊕issued⊕expiry⊕ciphertext⊕nonce⊕confidentiality⊕hmac`
 //!
 //!
 //! Verifying the token takes the following steps
@@ -67,11 +68,13 @@
 //! #### Creating a token
 //!
 //! ```rust
-//! use lite_session::{LiteSessionToken, LiteSessionError, ConfidentialityMode, LiteSessionData, LiteSessionMode};
+//! use lite_session::{LiteSessionToken, LiteSessionError, ConfidentialityMode, LiteSessionData, Role, LiteSessionMode};
+//! use core::time::Duration;
+//!
 //! fn main() -> Result<(), LiteSessionError> {
 //!     let mut token = LiteSessionToken::default();
 //!
-//!     let expiry = Duration::from_secs(60*60);
+//!     let expiry = 60*60_u64;
 //!     token.expiry(expiry);
 //!
 //!     let mut data = LiteSessionData::default();
@@ -100,7 +103,7 @@
 //!     let server_key = [0_u8; 32];
 //!
 //!     let mut destructured = LiteSessionToken::default();
-//!     let session_token = "FoooBar";
+//!     let session_token = "5tl726krvgmhoe1pyc4jadqs3fw09bi8⊕40000000602e51ab3a8e2d17⊕40000000603013ab3a8e2d17⊕3cf157bed212d5b34122a713ea860ec373800e5004bff1a195d603305bd5b7921d1017e70ef599bc1f7ed949bd3c66c696d74a16487f95a3f6fd⊕jrzapflsi618⊕ConfidentialityMode::High⊕4faab373d7247dfb2d50e213e5cb66e415afc22066f71c2b966fdeabb11cac64";
 //!     let outcome = destructured.from_string(&server_key, &session_token)?;
 //!     
 //!     Ok(())

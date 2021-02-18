@@ -11,6 +11,10 @@ use timelite::LiteDuration;
 /// The token strucuture that performs token operations
 ///
 /// ```
+/// use tai64::TAI64N;
+/// use lite_session::{LiteSessionData, ConfidentialityMode, LiteSessionMode};
+/// use blake3::Hash;
+///
 /// pub struct LiteSessionToken {
 ///     identifier: String,
 ///     issued: TAI64N,
