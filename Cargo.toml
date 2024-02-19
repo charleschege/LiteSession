@@ -20,8 +20,8 @@ maintenance = { status = "actively-developed" }
 arrayvec = "0.5.2"
 blake3 = "0.3.7"
 chacha20 = "0.6.0"
-hex = { version = "0.4.2", default-features = false }
+hex = { version = "0.4.2", default-features = false, features = ["alloc"]}
 nanorand = { version = "0.5.2", features = ["chacha"] }
 secrecy = { version = "0.7.0", features = ["serde"] }
 tai64 = "3.1.0"
-timelite = "1.0.4"
+# timelite = "1.0.4"
