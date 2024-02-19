@@ -93,9 +93,8 @@ impl core::cmp::PartialEq for Role {
             | (Role::SuperUser, Role::SuperUser)
             | (Role::Admin, Role::Admin)
             | (Role::User, Role::User) => true,
-            (Role::Custom(value), Role::Custom(value2)) => {
-                let (a, b) = (value, value2);
-                a == b
+            (Role::Custom(value), Role::Custom(value2)) => match (value, value2) {
+                (a, b) => a == b
             },
             _ => false,
         }
