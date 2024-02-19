@@ -6,7 +6,6 @@ use crate::{
 use core::time::Duration;
 use std::convert::TryInto;
 use tai64::TAI64N;
-use timelite::LiteDuration;
 
 /// The token strucuture that performs token operations
 ///
@@ -39,7 +38,7 @@ pub struct LiteSessionToken {
 impl Default for LiteSessionToken {
     fn default() -> Self {
         let now = TAI64N::now();
-        let default_expiry = LiteDuration::hours(24);
+        let default_expiry = 24 * 60 * 60;
         let hmac_default = blake3::hash(b"");
 
         Self {
@@ -305,7 +304,7 @@ mod token_tests {
         let mut token = LiteSessionToken::default();
         assert_eq!(token.identifier.len(), 32_usize);
 
-        let change_expiry = timelite::LiteDuration::hours(32);
+        let change_expiry = 32 * 60 * 60;
         token.expiry(change_expiry);
         assert_eq!(
             token.expiry,

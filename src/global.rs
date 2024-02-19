@@ -94,7 +94,7 @@ impl core::cmp::PartialEq for Role {
             | (Role::Admin, Role::Admin)
             | (Role::User, Role::User) => true,
             (Role::Custom(value), Role::Custom(value2)) => match (value, value2) {
-                (a, b) => a == b,
+                (a, b) => a == b
             },
             _ => false,
         }
@@ -174,8 +174,8 @@ impl Default for ConfidentialityMode {
 impl Debug for ConfidentialityMode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Low => write!(f, "{:?}", self),
-            Self::High => write!(f, "{}", "ConfidentialityMode::Low"),
+            Self::Low => write!(f, "ConfidentialityMode::Low"),
+            Self::High => write!(f, "ConfidentialityMode::High"),
         }
     }
 }
@@ -183,8 +183,8 @@ impl Debug for ConfidentialityMode {
 impl Display for ConfidentialityMode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Low => write!(f, "{:?}", self),
-            Self::High => write!(f, "{}", "ConfidentialityMode::High"),
+            Self::Low => write!(f, "ConfidentialityMode::Low"),
+            Self::High => write!(f, "ConfidentialityMode::High"),
         }
     }
 }
